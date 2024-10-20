@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useDebounceCallback } from 'usehooks-ts';
+
 import * as z from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -76,27 +76,23 @@ export default function SignUpForm() {
       });
 
       router.replace(`/verify/${username}`);
-
-      setIsSubmitting(false);
     } catch (error) {
       console.error('Error during sign-up:', error);
 
       const axiosError = error as AxiosError<ApiResponse>;
 
-      // Default error message
-      const errorMessage = axiosError.response?.data.message;
-      ('There was a problem with your sign-up. Please try again.');
+      // Set error message properly
+      const errorMessage = axiosError.response?.data.message || 'There was a problem with your sign-up. Please try again.';
 
       toast({
         title: 'Sign Up Failed',
         description: errorMessage,
         variant: 'destructive',
       });
-
+    } finally {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-800">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
