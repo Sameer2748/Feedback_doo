@@ -6,7 +6,7 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY, // Ensure you have this in your .env file
 });
 
-export async function POST(request: Request) {
+export async function POST() {
     try {
         const prompt =
             "Create a list of three open-ended and engaging questions formatted as a single string. Each question should be separated by '||'. These questions are for an anonymous social messaging platform, like Qooh.me, and should be suitable for a diverse audience.";

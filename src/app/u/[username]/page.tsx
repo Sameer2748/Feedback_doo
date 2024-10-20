@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { CardHeader, CardContent, Card } from '@/components/ui/card';
+
 import { useCompletion } from 'ai/react';
 import {
   Form,
@@ -27,9 +27,7 @@ import { toast } from '@/hooks/use-toast';
 
 const specialChar = '||';
 
-const parseStringMessages = (messageString: string): string[] => {
-  return messageString.split(specialChar);
-};
+
 
 const initialMessageString =
   "What's your favorite movie?||Do you have any pets?||What's your dream job?";
@@ -39,10 +37,7 @@ export default function SendMessage() {
   const username = params.username;
 
   const {
-    complete,
-    completion,
-    isLoading: isSuggestLoading,
-    error,
+    complete
   } = useCompletion({
     api: '/api/suggest-messages',
     initialCompletion: initialMessageString,
@@ -54,10 +49,7 @@ export default function SendMessage() {
 
   const messageContent = form.watch('content');
 
-  const handleMessageClick = (message: string) => {
-    form.setValue('content', message);
-  };
-
+  
   const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (data: z.infer<typeof messageSchema>) => {
@@ -86,14 +78,7 @@ export default function SendMessage() {
     }
   };
 
-  const fetchSuggestedMessages = async () => {
-    try {
-      complete('');
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      // Handle error appropriately
-    }
-  };
+  
 
   return (
     <div className="container mx-auto my-8 p-6 bg-white rounded max-w-4xl">

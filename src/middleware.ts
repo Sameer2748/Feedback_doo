@@ -13,8 +13,6 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXT_AUTH_SECRET });
   const url = request.nextUrl;
 
-  // Extract user info if the token exists
-  const user = token?.user;
 
   // If user is authenticated and trying to access sign-in, sign-up, or verify, redirect to dashboard
   if (
