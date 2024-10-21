@@ -2,7 +2,24 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/dbConnect';
-import UserModel from '@/model/User';
+import UserModel from '@/model/User'; // Assuming User is the Mongoose model
+import { User } from 'next-auth';
+
+// Define a type for credentials
+interface Credentials {
+  identifier: string;
+  password: string;
+}
+
+// Map the Mongoose User to NextAuth User
+function mapToNextAuthUser(user: any): User {
+  return {
+    id: user._id.toString(),
+    name: user.username,
+    email: user.email,
+    // Add any other fields you want to pass to NextAuth
+  };
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,11 +27,17 @@ export const authOptions: NextAuthOptions = {
       id: 'credentials',
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'text' },
+        identifier: { label: 'Email or Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials: any): Promise<any> {
+      // Correct types for `authorize`
+      async authorize(credentials: Credentials | undefined): Promise<User | null> {
+        if (!credentials) {
+          return null;
+        }
+
         await dbConnect();
+
         try {
           const user = await UserModel.findOne({
             $or: [
@@ -22,23 +45,28 @@ export const authOptions: NextAuthOptions = {
               { username: credentials.identifier },
             ],
           });
+
           if (!user) {
-            throw new Error('No user found with this email');
+            throw new Error('No user found with this email or username');
           }
+
           if (!user.isVerified) {
             throw new Error('Please verify your account before logging in');
           }
-          const isPasswordCorrect = await bcrypt.compare(
-            credentials.password,
-            user.password
-          );
-          if (isPasswordCorrect) {
-            return user;
-          } else {
+
+          const isPasswordCorrect = await bcrypt.compare(credentials.password, user.password);
+
+          if (!isPasswordCorrect) {
             throw new Error('Incorrect password');
           }
-        } catch (err: any) {
-          throw new Error(err);
+
+          // Return the mapped user
+          return mapToNextAuthUser(user);
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            throw new Error(err.message);
+          }
+          throw new Error('An unknown error occurred');
         }
       },
     }),
@@ -46,15 +74,17 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token._id = user._id?.toString(); // Convert ObjectId to string
+        // Make sure _id is string, and attach other fields to the token
+        token._id = user.id;
         token.isVerified = user.isVerified;
         token.isAcceptingMessages = user.isAcceptingMessages;
-        token.username = user.username;
+        token.username = user.name ?? undefined; // This will assign `undefined` if `user.name` is null or undefined
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
+        // Attach the token information to the session user object
         session.user._id = token._id;
         session.user.isVerified = token.isVerified;
         session.user.isAcceptingMessages = token.isAcceptingMessages;
@@ -66,7 +96,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXT_AUTH_SECRET,
   pages: {
     signIn: '/signIn',
   },
