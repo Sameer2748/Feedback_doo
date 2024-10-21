@@ -3,7 +3,17 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/dbConnect';
 import UserModel from '@/model/User'; // Assuming User is the Mongoose model
-import { User } from 'next-auth';
+import { User as NextAuthUser } from 'next-auth';
+
+// Define a type for your Mongoose User model
+interface MongooseUser {
+  _id: string; // Mongoose ID, which can be converted to string
+  email: string;
+  username?: string; // Optional if it may not always be present
+  isVerified: boolean;
+  isAcceptingMessages?: boolean; // Optional if it may not always be present
+  password: string; // Ensure you have this if you're comparing passwords
+}
 
 // Define a type for credentials
 interface Credentials {
@@ -12,9 +22,9 @@ interface Credentials {
 }
 
 // Map the Mongoose User to NextAuth User
-function mapToNextAuthUser(user: any): User {
+function mapToNextAuthUser(user: MongooseUser): NextAuthUser {
   return {
-    id: user._id.toString(),
+    id: user._id, // Convert to string if necessary
     name: user.username,
     email: user.email,
     // Add any other fields you want to pass to NextAuth
@@ -31,7 +41,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       // Correct types for `authorize`
-      async authorize(credentials: Credentials | undefined): Promise<User | null> {
+      async authorize(credentials: Credentials | undefined): Promise<NextAuthUser | null> {
         if (!credentials) {
           return null;
         }
@@ -75,7 +85,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         // Make sure _id is string, and attach other fields to the token
-        token._id = user.id;
+        token._id = user.id; // Use user.id as per mapped type
         token.isVerified = user.isVerified;
         token.isAcceptingMessages = user.isAcceptingMessages;
         token.username = user.name ?? undefined; // This will assign `undefined` if `user.name` is null or undefined
@@ -96,7 +106,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
-  secret: process.env.NEXT_AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/signIn',
   },
