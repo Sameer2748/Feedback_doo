@@ -8,7 +8,6 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-import { useCompletion } from 'ai/react';
 import {
   Form,
   FormControl,
@@ -26,10 +25,6 @@ import { messageSchema } from '@/schemas/messageSchema';
 import { toast } from '@/hooks/use-toast';
 
 
-
-
-const initialMessageString =
-  "What's your favorite movie?||Do you have any pets?||What's your dream job?";
 
 export default function SendMessage() {
   const params = useParams<{ username: string }>();
