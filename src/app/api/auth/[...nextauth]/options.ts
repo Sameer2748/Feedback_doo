@@ -1,32 +1,9 @@
-import { NextAuthOptions, DefaultSession } from 'next-auth';
+import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/dbConnect';
 import UserModel from '@/model/User';
-import { User } from '@/model/User'; // Adjust import based on your User model definition
 
-// Define the credentials type
-interface Credentials {
-  identifier: string; // email or username
-  password: string;
-}
-
-// Extend the DefaultSession to include custom user properties
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      _id: string;
-      isVerified: boolean;
-      isAcceptingMessages: boolean;
-      username: string;
-      name?: string | null; // Include other properties if necessary
-      email?: string | null; // Include other properties if necessary
-      image?: string | null; // Include other properties if necessary
-    } & DefaultSession['user']; // Merge with the default user properties
-  }
-}
-
-// Define the NextAuthOptions
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -36,7 +13,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials: Credentials): Promise<User | null> {
+      async authorize(credentials: any): Promise<any> {
         await dbConnect();
         try {
           const user = await UserModel.findOne({
@@ -56,12 +33,12 @@ export const authOptions: NextAuthOptions = {
             user.password
           );
           if (isPasswordCorrect) {
-            return user; // Returning the user object
+            return user;
           } else {
             throw new Error('Incorrect password');
           }
-        } catch (err) {
-          throw new Error(err instanceof Error ? err.message : 'An error occurred');
+        } catch (err: any) {
+          throw new Error(err);
         }
       },
     }),
@@ -78,18 +55,18 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user._id = token._id as string; // Type assertion
-        session.user.isVerified = token.isVerified as boolean;
-        session.user.isAcceptingMessages = token.isAcceptingMessages as boolean;
-        session.user.username = token.username as string;
+        session.user._id = token._id;
+        session.user.isVerified = token.isVerified;
+        session.user.isAcceptingMessages = token.isAcceptingMessages;
+        session.user.username = token.username;
       }
-      return session; // No need to cast to ExtendedSession here
+      return session;
     },
   },
   session: {
     strategy: 'jwt',
   },
-  secret: process.env.NEXT_AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/signIn',
   },
